@@ -1,8 +1,8 @@
 import type { LoaderArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Outlet, useLoaderData } from "@remix-run/react";
-import { getFormProfile } from "~/server/routes-logic/requests";
-import ArtistFormProfile from "~/server/routes-logic/requests/ui/ArtistFormProfile";
+import { getFormProfile } from "~/server/route-logic/requests";
+import ArtistFormProfile from "~/server/route-logic/requests/ui/ArtistFormProfile";
 // import { getFormProfile } from "~/server/route-logic/requests";
 // import ArtistFormProfile from "~/server/route-logic/requests/ui/ArtistFormProfile";
 

@@ -1,6 +1,6 @@
 import type { LoaderArgs} from "@remix-run/node";
 import { redirect } from "@remix-run/node";
-import { getRequestIdRedirectUrl } from "~/server/routes-logic/requests";
+import { getRequestIdRedirectUrl } from "~/server/route-logic/requests";
 
 export async function loader({params}:LoaderArgs) {
   const redirectUrl= await getRequestIdRedirectUrl(params);
