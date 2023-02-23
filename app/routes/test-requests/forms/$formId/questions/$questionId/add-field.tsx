@@ -1,7 +1,7 @@
-import { useActionData, useLoaderData, Link, Form } from "@remix-run/react";
+import { useActionData, useLoaderData,  Form } from "@remix-run/react";
 import type { ActionArgs, LoaderArgs} from "@remix-run/node";
 import { json, redirect } from "@remix-run/node";
-import { Field } from "~/server/route-logic/requests/types";
+import type { Field } from "~/server/route-logic/requests/types";
 import { checkFieldAddFormSchema, writeFieldtoDb } from "~/server/route-logic/test-requests";
 import { db } from "~/server/db.server";
 import QuestionPanel from "~/server/route-logic/requests/ui/forms/QuestionPanel";
@@ -74,11 +74,12 @@ export async function action({ params, request }: ActionArgs) {
 
 export default function AddField() {
   const { questionDisplayData} = useLoaderData<typeof loader>();
+  const actionData = useActionData();
   return (
       <Form method="post" >
         <QuestionPanel
           questionDisplayData={questionDisplayData} 
-          actionData={{}}
+          actionData={actionData}
         />
       </Form>
     );

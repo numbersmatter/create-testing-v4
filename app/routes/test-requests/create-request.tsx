@@ -1,12 +1,16 @@
 
-import { ActionArgs, LoaderArgs, redirect } from "@remix-run/node";
+import type { ActionArgs, LoaderArgs} from "@remix-run/node";
+import { redirect } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
-import { database } from "firebase-admin";
 import { writeRequestDoc } from "~/server/route-logic/requests";
-import { Field, RequestDoc } from "~/server/route-logic/requests/types";
+import type { Field } from "~/server/route-logic/requests/types";
 import QuestionPanel from "~/server/route-logic/requests/ui/forms/QuestionPanel";
-import { getTestFormById, getTestFormByParams, getTestFormQuestionDoc, getTestFormQuestions, getTestForms, hydrateQuestion } from "~/server/route-logic/test-requests";
+import { getTestFormById, getTestForms } from "~/server/route-logic/test-requests";
+// import { writeRequestDoc } from "~/server/route-logic/requests";
+// import { Field, RequestDoc } from "~/server/route-logic/requests/types";
+// import QuestionPanel from "~/server/route-logic/requests/ui/forms/QuestionPanel";
+// import { getTestFormById, getTestFormByParams, getTestFormQuestionDoc, getTestFormQuestions, getTestForms, hydrateQuestion } from "~/server/route-logic/test-requests";
 
 
 
@@ -34,36 +38,40 @@ export async function action({ params, request }: ActionArgs) {
 
   const questionResponses = testForm.questionOrder.reduce((acc, questionId)=>({...acc, [questionId]:{}}), {})
 
-  // const questionsObj = await getTestFormQuestionDoc(formId, "HnTK0jw8BXo0yRGQ2oRc" )
-  const questionsObj = testForm.questionOrder.map( async ( questionId)=>{ 
-   
-    const data = await getTestFormQuestionDoc(formId, questionId)
-
-    return { ...data, questionId}
+  const newQuestionsArray = testForm.questionOrder.map((questionId)=>{
+    const formQuestion = testForm.formQuestionObj[questionId];
+    const formIntFields = formQuestion.questionFieldsOrder.map((fieldId)=>({
+      ...formQuestion.questionFieldsObj[fieldId], fieldId
+    }))
+    const formIntQuestion= {
+      questionId,
+      questionName: formQuestion.questionName,
+      questionText: formQuestion.questionText,
+      fields: formIntFields
+    };
+    return formIntQuestion
   })
-  // const questionsObj = testForm.questionOrder.reduce(async (acc, questionId)=>({
-  //   ...acc, [questionId]: questionId
-  // }), {})
 
-  // const questionsObj = {test:"1"}
-
-
-  // const newRequestDoc = {
-  //   profileHeaderData,
-  //   questionOrder: testForm.questionOrder,
-  //   questionResponses,
-  //   questionStatus,
-  //   questionsObj,
-  //   status: "in-progress"
-  // } 
-
-  // const requestId = await writeRequestDoc({...newRequestDoc, status:"in-progress"});
+  const newQuestionObj = newQuestionsArray.reduce((acc, formIntQuest)=>({... acc, [formIntQuest.questionId]: { questionName: formIntQuest.questionName, questionText: formIntQuest.questionText, fields: formIntQuest.fields}}), {})
 
 
 
-  return json({questionsObj})
+  const newRequestDoc = {
+    profileHeaderData,
+    questionOrder: testForm.questionOrder,
+    questionResponses,
+    questionStatus,
+    questionsObj: newQuestionObj,
+    status: "in-progress"
+  } 
 
-  // return redirect(`/requests/${requestId}`);
+  const requestId = await writeRequestDoc({...newRequestDoc, status:"in-progress"});
+
+
+
+  // return json({newRequestDoc})
+
+  return redirect(`/requests/${requestId.requestId}`);
 }
 
 

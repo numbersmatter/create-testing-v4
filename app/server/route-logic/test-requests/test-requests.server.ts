@@ -7,17 +7,18 @@ import { FieldArrayTypes } from "./types";
 
 // Level 3
 // db operation helpers
-const getTestFormQuestionDocs = async (formId: string) => {
-  const formSnap = await db.testForms().doc(formId).get();
+// const getTestFormQuestionDocs = async (formId: string) => {
+//   const formSnap = await db.testForms().doc(formId).get();
+//   const formData = formSnap.data()
 
-  const testFormQuestionsSnap = await db.testFormQuestions(formId).get();
-  const testFormQuestionsDocs = testFormQuestionsSnap.docs.map((doc) => ({
-    ...doc.data(),
-    formQuestionId: doc.id,
-  }));
 
-  return testFormQuestionsDocs;
-};
+//   const testFormQuestionsDocs = formData?.questionOrder.map((doc) => ({
+//     ...doc.data(),
+//     formQuestionId: doc.id,
+//   }));
+
+//   return testFormQuestionsDocs;
+// };
 
 
 
@@ -74,20 +75,25 @@ export const writeFormToDb = async (data: FormDoc) => {
 // Level 4
 // route level actions
 
-export const getTestFormQuestions = async (params: Params<string>) => {
-  const formId = params.formId ?? "no-formId";
-  return getTestFormQuestionDocs(formId);
-};
+// export const getTestFormQuestions = async (params: Params<string>) => {
+//   const formId = params.formId ?? "no-formId";
+//   return getTestFormQuestionDocs(formId);
+// };
 
 export const getQuestionFields = async (params: Params<string>) => {
   const formId = params.formId ?? "no-formId";
   const questionId = params.questionId ?? "no-questionId";
+  const formSnap = await db.testForms().doc(formId).get();
+  const formData = formSnap.data();
 
-  const fieldsSnap = await db.questionFields(formId, questionId).get();
+  if(!formData)
+  { return undefined}
 
-  const fields = fieldsSnap.docs.map((fieldSnap) => ({
-    ...fieldSnap.data(),
-    fieldId: fieldSnap.id,
+  const formQuestion = formData.formQuestionObj[questionId]; 
+
+  const fields = formQuestion.questionFieldsOrder.map((fieldId) => ({
+    ...formQuestion.questionFieldsObj[fieldId],
+    fieldId
   }));
 
   return fields;
@@ -239,15 +245,18 @@ export const getFieldDocById = async (
   questionId: string,
   fieldId: string
 ) => {
-  const fieldRef = db.questionFields(formId, questionId).doc(fieldId);
-  const fieldSnap = await fieldRef.get();
-  const fieldData = fieldSnap.data();
 
-  if (!fieldData) {
+  const formRef = db.testForms().doc(formId);
+  const formSnap = await formRef.get();
+  const formData = formSnap.data();
+
+  if (!formData) {
     return undefined;
   }
 
-  return { ...fieldData, fieldId };
+  const fieldDoc = formData.formQuestionObj[questionId].questionFieldsObj[fieldId]
+
+  return { ...fieldDoc, fieldId };
 };
 
 export const writeOptionToField = async (
@@ -257,23 +266,37 @@ export const writeOptionToField = async (
   label: string
 ) => {
   // const questionRef = db.testQuestions().doc(questionId);
-  const fieldRef = db.questionFields(formId, questionId).doc(fieldId);
+  // const fieldId = db.questionFields(formId, questionId).doc(fieldId);
   // const questionSnap = await questionRef.get();
+  const formRef = db.testForms().doc(formId);
+  const formSnap = await formRef.get();
+  const formData = formSnap.data();
 
-  const fieldDocSnap = await fieldRef.get();
 
-  const fieldDoc = fieldDocSnap.data();
-  if (!fieldDoc) {
+
+  if (!formData) {
     return undefined;
   }
 
   // create random unique id for option value
-  const uniqueValue = db.testForms().doc().id;
+  const uniqueValue = db.unique().doc().id;
+
+  const formQuestion = formData.formQuestionObj[questionId];
+  const fieldDoc = formQuestion.questionFieldsObj[fieldId]
+  const currentFieldOption = fieldDoc.options ?? []
+
+  const newFieldOptions = [ ...currentFieldOption, {label, value: uniqueValue}]
+  const newFieldDoc: FieldDoc = { ...fieldDoc, options: newFieldOptions }
+  // const newQuestionFieldOrder = [...formQuestion.questionFieldsOrder, ]
+
+  const newFieldObj = {...formQuestion.questionFieldsObj, [fieldId]:newFieldDoc }
+
+  const newformQuestion: FormQuestion = { ...formQuestion, questionFieldsObj: newFieldObj};
+  
+  const newFormQuestionObj: { [id:string]: FormQuestion} = { ...formData.formQuestionObj, [questionId]: newformQuestion}
 
   // update fields array in questionDoc
-  const writeOption = await fieldRef.update({
-    options: FieldValue.arrayUnion({ label: label, value: uniqueValue }),
-  });
+  const writeOption = await formRef.set({ formQuestionObj: newFormQuestionObj}, {merge: true})
 
   return { writeOption };
 };
@@ -284,75 +307,83 @@ export const deleteOptionByValue = async (
   fieldId: string,
   optionValue: string
 ) => {
-  // const questionRef = db.testQuestions().doc(questionId);
-  const fieldRef = db.questionFields(formId, questionId).doc(fieldId);
-  // const questionSnap = await questionRef.get();
+  const formRef = db.testForms().doc(formId);
+  const formSnap = await formRef.get();
+  const formData = formSnap.data();
 
-  const fieldDocSnap = await fieldRef.get();
 
-  const fieldDoc = fieldDocSnap.data();
-  if (!fieldDoc) {
+
+  if (!formData) {
     return undefined;
   }
 
-  const oldOptions = fieldDoc.options ?? [];
+  const formQuestion = formData.formQuestionObj[questionId];
+  const fieldDoc = formQuestion.questionFieldsObj[fieldId]
+  const currentFieldOption = fieldDoc.options ?? []
 
-  // filter out options by not equal to value that was passed
-  const newOptions = oldOptions.filter(
-    (option) => option.value !== optionValue
-  );
+  const newFieldOptions = currentFieldOption.filter((option)=> option.value !==optionValue )
+  const newFieldDoc: FieldDoc = { ...fieldDoc, options: newFieldOptions }
+  // const newQuestionFieldOrder = [...formQuestion.questionFieldsOrder, ]
+
+  const newFieldObj = {...formQuestion.questionFieldsObj, [fieldId]:newFieldDoc }
+
+  const newformQuestion: FormQuestion = { ...formQuestion, questionFieldsObj: newFieldObj};
+  
+  const newFormQuestionObj: { [id:string]: FormQuestion} = { ...formData.formQuestionObj, [questionId]: newformQuestion}
 
   // update fields array in questionDoc
-  return await fieldRef.update({
-    options: newOptions,
-  });
+  const writeOption = await formRef.set({ formQuestionObj: newFormQuestionObj}, {merge: true})
+
+  return { writeOption };
+
+
 };
 
-export const hydrateQuestion = async (formId: string, questionId: string) => {
-  const formQuestionRef = db.testFormQuestions(formId).doc(questionId);
-  const formQuestionFieldsRef = db.questionFields(formId, questionId);
+// export const hydrateQuestion = async (formId: string, questionId: string) => {
+//   const formQuestionRef = db.testFormQuestions(formId).doc(questionId);
+//   const formQuestionFieldsRef = db.questionFields(formId, questionId);
 
-  const formQuestionSnap = await formQuestionRef.get();
-  const formFieldsSnap = await formQuestionFieldsRef.get();
-  const formQuestionDoc = formQuestionSnap.data();
+//   const formQuestionSnap = await formQuestionRef.get();
+//   const formFieldsSnap = await formQuestionFieldsRef.get();
+//   const formQuestionDoc = formQuestionSnap.data();
 
-  if (!formQuestionDoc) {
-    return undefined;
-  }
+//   if (!formQuestionDoc) {
+//     return undefined;
+//   }
 
-  const formFields = formFieldsSnap.docs.map((doc) => ({
-    ...doc.data(),
-    fieldId: doc.id,
-  }));
+//   const formFields = formFieldsSnap.docs.map((doc) => ({
+//     ...doc.data(),
+//     fieldId: doc.id,
+//   }));
 
-  // const fieldObj = formFields.reduce((acc, fieldDoc)=> {
-  //   const {fieldId, ...data} = fieldDoc
-  //   return ({...acc, [fieldId]:fieldDoc })}, {}
-  // )
+//   // const fieldObj = formFields.reduce((acc, fieldDoc)=> {
+//   //   const {fieldId, ...data} = fieldDoc
+//   //   return ({...acc, [fieldId]:fieldDoc })}, {}
+//   // )
 
-  const questionFields = formQuestionDoc.questionFieldsOrder.map((fieldId) => {
-    return formFields.find((fieldDoc) => fieldDoc.fieldId === fieldId);
-  });
-
-
-  //  need to turn this into
-  //  request expectation of  a question
-
-  const requestQuestion = {
-    questionName: formQuestionDoc.questionName,
-    questionText: formQuestionDoc.questionText,
-    fields: questionFields,
-  };
-
-  return "test-string"
-};
+//   const questionFields = formQuestionDoc.questionFieldsOrder.map((fieldId) => {
+//     return formFields.find((fieldDoc) => fieldDoc.fieldId === fieldId);
+//   });
 
 
-export const createRequestDoc=async (params:any) => {
+//   //  need to turn this into
+//   //  request expectation of  a question
 
-  const formQuestions = await getTestFormQuestions(params);
+//   const requestQuestion = {
+//     questionName: formQuestionDoc.questionName,
+//     questionText: formQuestionDoc.questionText,
+//     fields: questionFields,
+//   };
+
+//   return "test-string"
+// };
+
+
+// export const createRequestDoc=async (params:any) => {
+
+//   const formQuestions = await getTestFormQuestions(params);
   
 
   
   
-}
+// }
