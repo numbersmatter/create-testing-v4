@@ -3,7 +3,7 @@ import type { Params } from "@remix-run/react";
 import { FieldValue } from "firebase-admin/firestore";
 import { z } from "zod";
 import { db } from "~/server/db.server";
-import type { Field, QuestionResponses, RequestDoc, StringIndexObj } from "./types";
+import type { Field, QuestionResponses, FormInstanceDoc, StringIndexObj } from "./types";
 
 
 // Level 3 
@@ -211,7 +211,7 @@ export const makeRequestDoc = async (
 
 
 
-  const requestDocData: RequestDoc = {
+  const requestDocData: FormInstanceDoc = {
     profileHeaderData,
     questionStatus,
     questionOrder,
@@ -255,7 +255,7 @@ export const getRequestIdRedirectUrl =async (params:Params<string>) => {
 };
 
 
-export const writeRequestDoc =async (requestDoc: RequestDoc) => {
+export const writeRequestDoc =async (requestDoc: FormInstanceDoc) => {
   const requestDocRef = db.requests().doc();
 
   const writeToDB = requestDocRef.create(requestDoc);

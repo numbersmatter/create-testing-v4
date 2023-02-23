@@ -1,4 +1,4 @@
-export interface RequestDoc {
+export interface FormInstanceDoc {
   profileHeaderData: HeaderData;
   questionStatus: QuestionStatus;
   status: "submitted" | "in-progress";
