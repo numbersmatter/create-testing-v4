@@ -2,7 +2,8 @@
 import type { LoaderArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
-import {  getQuestionFields, getTestFormQuestionById, getTestFormQuestionDoc } from "~/server/route-logic/test-requests";
+import { getQuestionFields, getTestFormQuestionDoc } from "~/server/route-logic/test-requests";
+// import {  getQuestionFields, getTestFormQuestionById, getTestFormQuestionDoc } from "~/server/route-logic/test-requests";
 
 
 export async function loader({ params }: LoaderArgs) {
@@ -13,14 +14,14 @@ export async function loader({ params }: LoaderArgs) {
     throw new Response("No question by that Id found", { status: 404 })
   }
 
-  const questionFields = await getQuestionFields(params)
+  // const questionFields = await getQuestionFields(params)
 
-  return json({ questionDoc, questionFields });
+  return json({ questionDoc, });
 }
 
 
 export default function QuestionPage() {
-  const { questionDoc, questionFields } = useLoaderData<typeof loader>();
+  const { questionDoc } = useLoaderData<typeof loader>();
   return (
     <article className="prose prose-xl">
       <h3> {questionDoc.questionName}</h3>
@@ -28,8 +29,8 @@ export default function QuestionPage() {
       <ul>
         {
           questionDoc.questionFieldsOrder.map((fieldId) => {
-            const doc = questionFields.find(fieldDoc => fieldDoc.fieldId === fieldId);
-            const fieldDoc = doc ?? {label:"Not Found", fieldId:"no-fieldId"}
+            const formQuestionField = questionDoc.questionFieldsObj[fieldId]
+            const fieldDoc = formQuestionField ?? {label:"Not Found", fieldId:"no-fieldId"}
             return (
               <li key={fieldId}>
                 <div>

@@ -8,6 +8,8 @@ import { FieldArrayTypes } from "./types";
 // Level 3
 // db operation helpers
 const getTestFormQuestionDocs = async (formId: string) => {
+  const formSnap = await db.testForms().doc(formId).get();
+
   const testFormQuestionsSnap = await db.testFormQuestions(formId).get();
   const testFormQuestionsDocs = testFormQuestionsSnap.docs.map((doc) => ({
     ...doc.data(),
@@ -17,30 +19,49 @@ const getTestFormQuestionDocs = async (formId: string) => {
   return testFormQuestionsDocs;
 };
 
+
+
 export const getTestFormQuestionDoc = async (
   formId: string,
   formQuestionId: string
 ) => {
-  const formQuestionRef = db.testFormQuestions(formId).doc(formQuestionId);
-  const formQuestionSnap = await formQuestionRef.get();
-  const formQuestionData = formQuestionSnap.data();
+  const formRef = db.testForms().doc(formId);
+  const formSnap = await formRef.get();
+  const formData = formSnap.data();
 
-  if (!formQuestionData) {
+  if(!formData){
     return undefined;
   }
 
-  return { ...formQuestionData, formQuestionId };
+  const questionDoc = formData.formQuestionObj[formQuestionId];
+
+
+
+  return { ...questionDoc, formQuestionId };
 };
 
 export const writeNewQuestionToDb = async (
   formId: string,
   data: FormQuestion
 ) => {
-  const newQuestionRef = db.testFormQuestions(formId).doc();
+  const newQuestionId = db.unique().doc().id;
+  const formRef = db.testForms().doc(formId);
 
-  const writeResult = await newQuestionRef.create(data);
+  const formSnap = await formRef.get();
+  const formDoc = formSnap.data();
+  
+  if(!formDoc){
+    return undefined;
+  };
 
-  return { writeResult, questionId: newQuestionRef.id };
+  const newQuestionsObj = { ...formDoc.formQuestionObj, [newQuestionId]: data}
+
+  const writeResult = await formRef.set({
+    questionOrder: FieldValue.arrayUnion(newQuestionId),
+    formQuestionObj: newQuestionsObj
+  }, {merge: true})
+
+  return { writeResult, questionId: newQuestionId };
 };
 export const writeFormToDb = async (data: FormDoc) => {
   const newFormRef = db.testForms().doc();
@@ -189,17 +210,28 @@ export const writeFieldtoDb = async (
   questionId: string,
   fieldData: FieldDoc
 ) => {
-  const fieldRef = db.questionFields(formId, questionId).doc();
-  const questionRef = db.testFormQuestions(formId).doc(questionId);
-  const writeFieldDoc = await fieldRef.create(fieldData);
+  const formRef = db.testForms().doc(formId);
+  const formSnap = await formRef.get();
+  const formData = formSnap.data();
+  const fieldId = db.unique().doc().id;
 
-  const questionUpdateData = {
-    questionFieldsOrder: FieldValue.arrayUnion(fieldRef.id),
+  if(!formData){
+    return undefined;
   };
 
-  await questionRef.update(questionUpdateData);
+  const formQuestion = formData.formQuestionObj[questionId]
 
-  return { ...writeFieldDoc, fieldId: fieldRef.id };
+  const currentFieldsObj = formQuestion.questionFieldsObj;
+  const newFieldsObj = {...currentFieldsObj, [fieldId]: fieldData}
+
+  const newFormQuestion:FormQuestion = { ...formQuestion, questionFieldsOrder: [...formQuestion.questionFieldsOrder, fieldId], questionFieldsObj: newFieldsObj };
+
+  const newFormQuestionObj = {...formData.formQuestionObj, [questionId]: newFormQuestion}
+
+
+  const writeResult = await formRef.set({formQuestionObj: newFormQuestionObj}, {merge:true})
+
+  return { ...writeResult, fieldId: fieldId };
 };
 
 export const getFieldDocById = async (

@@ -2,9 +2,12 @@ import type { LoaderArgs, ActionArgs} from "@remix-run/node";
 import { redirect} from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
-import type { Field } from "~/server/route-logic/requests/types";
+import { Field } from "~/server/route-logic/requests/types";
 import QuestionPanel from "~/server/route-logic/requests/ui/forms/QuestionPanel";
-import { safeParseAddFormQuestion,writeNewQuestionToDb, writeQuestionIdToForm } from "~/server/route-logic/test-requests/test-requests.server";
+import { safeParseAddFormQuestion, writeNewQuestionToDb } from "~/server/route-logic/test-requests";
+// import type { Field } from "~/server/route-logic/requests/types";
+// import QuestionPanel from "~/server/route-logic/requests/ui/forms/QuestionPanel";
+// import { safeParseAddFormQuestion,writeNewQuestionToDb, writeQuestionIdToForm } from "~/server/route-logic/test-requests/test-requests.server";
 
 
 export async function action({params, request}:ActionArgs) {
@@ -15,9 +18,13 @@ export async function action({params, request}:ActionArgs) {
     if(!checkDataShape.success){
     return checkDataShape.error;
   }else{
-    const formQuestion = {...checkDataShape.data, questionFieldsOrder: [] }
+    const formQuestion = {...checkDataShape.data, questionFieldsOrder: [], questionFieldsObj:{} }
     const writeQuestion = await writeNewQuestionToDb(formId, formQuestion);
-    await writeQuestionIdToForm(formId, writeQuestion.questionId);
+
+    if(!writeQuestion){
+      throw new Response("no question I match", {status:401})
+    }
+    // await writeQuestionIdToForm(formId, writeQuestion.questionId);
     
     return redirect(`/test-requests/forms/${formId}/questions/${writeQuestion.questionId}`)
   }

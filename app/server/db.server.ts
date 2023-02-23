@@ -1,7 +1,7 @@
 import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 import { getFirestore } from "firebase-admin/firestore";
-import { FormInstanceDoc  } from "./route-logic/requests/types";
-import { FieldDoc, FormDoc, FormQuestion } from "./route-logic/test-requests/types";
+import type { FormInstanceDoc  } from "./route-logic/requests/types";
+import type { FormDoc} from "./route-logic/test-requests/types";
 
 // helper function to convert firestore data to typescript
 const converter = <T>() => ({
@@ -29,6 +29,7 @@ export const db = {
   // testFormQuestions: (formId: string) => dataPoint<FormQuestion>(
   //   `${version4Url}/testForms/${formId}/testFormQuestions/`),
   testForms: () => dataPoint<FormDoc>(`${version4Url}/testForms`),
+  unique: () =>dataPoint('unique'),
   // questionFields : (formId:string, questionId:string)=> dataPoint<FieldDoc>(
   //   `${version4Url}/testForms/${formId}/testFormQuestions/${questionId}/fields`)
 };
