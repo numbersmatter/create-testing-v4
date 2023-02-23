@@ -2,7 +2,8 @@ export interface RequestDoc {
   profileHeaderData: HeaderData;
   questionStatus: QuestionStatus;
   status: "submitted" | "in-progress";
-  questions: Question[];
+  questionOrder: string[];
+  questionsObj: { [questionId: string]: Question };
   questionResponses: QuestionResponses;
 }
 interface HeaderData {
@@ -51,7 +52,4 @@ interface Question {
 
 }
 
-interface UserQuestionResponse {
-  [index:string]: string;
-}
 

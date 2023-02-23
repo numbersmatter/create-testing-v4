@@ -1,8 +1,10 @@
 import type { ActionArgs, LoaderArgs} from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
-import { getQuestionDisplayData, processUserFormSubmission } from "~/server/route-logic/requests";
-import QuestionPanel from "~/server/route-logic/requests/ui/forms/QuestionPanel";
+import { getQuestionDisplayData, processUserFormSubmission } from "~/server/routes-logic/requests";
+import QuestionPanel from "~/server/routes-logic/requests/ui/forms/QuestionPanel";
+// import { getQuestionDisplayData, processUserFormSubmission } from "~/server/route-logic/requests";
+// import QuestionPanel from "~/server/route-logic/requests/ui/forms/QuestionPanel";
 
 
 export async function action({params, request}:ActionArgs) {
@@ -28,7 +30,7 @@ export default function QuestionDisplay() {
 
   return (
     <Form method="post">
-      <QuestionPanel 
+      <QuestionPanel
         questionDisplayData={questionDisplayData}
         actionData={actionData}
       />
