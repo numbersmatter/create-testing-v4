@@ -7,7 +7,7 @@ import type { Field, QuestionResponses, FormInstanceDoc, StringIndexObj } from "
 
 
 // Level 3 
-const getRequestDocById = async (requestId: string) => {
+export const getRequestDocById = async (requestId: string) => {
   const requestDocRef = db.requests().doc(requestId);
   const requestDocSnap = await requestDocRef.get();
   const requestDocData = requestDocSnap.data();
