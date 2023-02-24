@@ -8,7 +8,7 @@ import QuestionPanel from "~/server/route-logic/requests/ui/forms/QuestionPanel"
 
 
 export async function action({params, request}:ActionArgs) {
-  await processUserFormSubmission(params, request)
+   return await processUserFormSubmission(params, request)
   
 }
 

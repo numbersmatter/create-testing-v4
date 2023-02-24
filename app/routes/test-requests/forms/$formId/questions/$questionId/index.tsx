@@ -48,6 +48,11 @@ export default function QuestionPage() {
             Add Field
           </Link>
         </li>
+        <li>
+          <Link to="..">
+            Back to Form
+          </Link>
+        </li>
 
       </ul>
 
